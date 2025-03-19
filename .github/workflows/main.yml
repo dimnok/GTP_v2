@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,8 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -20,32 +23,22 @@ jobs:
           flutter-version: '3.19.2'
           channel: 'stable'
 
-      - name: Debug Info
-        run: |
-          echo "Current directory:"
-          pwd
-          echo "Directory contents:"
-          ls -la
-          echo "Flutter version:"
-          flutter --version
-          echo "Pubspec.yaml contents:"
-          cat pubspec.yaml
-
-      - name: Clean
-        run: flutter clean
-
-      - name: Get packages
+      - name: Install dependencies
         run: |
           flutter config --enable-web
-          rm -rf pubspec.lock
           flutter pub get
 
       - name: Build
-        run: flutter build web --release
+        run: |
+          flutter build web --release --base-href "/GTP_v2/"
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
-          force_orphan: true
+          path: ./build/web
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+        with:
+          artifact_name: github-pages
