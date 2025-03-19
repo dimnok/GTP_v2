@@ -4,12 +4,26 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
+      
+      - name: Create gh-pages branch if not exists
+        run: |
+          if ! git ls-remote --heads origin gh-pages; then
+            git checkout --orphan gh-pages
+            git reset --hard
+            git commit --allow-empty -m "Create gh-pages branch"
+            git push origin gh-pages
+            git checkout main
+          fi
+          
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.2'
@@ -19,11 +33,11 @@ jobs:
         run: |
           flutter config --enable-web
           flutter pub get
-          flutter build web --release
+          flutter build web --release --base-href "/GTP_v2/"
           
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
-          cname: dimnok.github.io
+          force_orphan: true
